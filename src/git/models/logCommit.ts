@@ -172,6 +172,11 @@ export class GitLogCommit extends GitCommit {
 		}${compact && deleted === 0 ? '' : `-${deleted}`}${suffix}`;
 	}
 
+	@memoize()
+	hasConflicts() {
+		return this.files.some(f => f.conflictStatus != null);
+	}
+
 	toFileCommit(file: string | GitFile): GitLogCommit | undefined {
 		const fileName = typeof file === 'string' ? GitUri.relativeTo(file, this.repoPath) : file.fileName;
 		const foundFile = this.files.find(f => f.fileName === fileName);

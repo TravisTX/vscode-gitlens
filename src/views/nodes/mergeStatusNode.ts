@@ -179,9 +179,15 @@ export class MergeConflictFileNode extends ViewNode implements FileNode {
 
 	getCommand(): Command | undefined {
 		return {
-			title: 'Open Changes',
+			title: 'Open File',
 			command: BuiltInCommands.Open,
-			arguments: [GitUri.resolveToUri(this.file.fileName, this.repoPath)],
+			arguments: [
+				GitUri.resolveToUri(this.file.fileName, this.repoPath),
+				{
+					preserveFocus: true,
+					preview: true,
+				},
+			],
 		};
 	}
 }
@@ -211,7 +217,7 @@ export class MergeConflictCurrentChangesNode extends ViewNode {
 	getCommand(): Command | undefined {
 		if (this.status.mergeBase == null) {
 			return {
-				title: 'Open Changes',
+				title: 'Open Revision',
 				command: BuiltInCommands.Open,
 				arguments: [GitUri.toRevisionUri('HEAD', this.file.fileName, this.status.repoPath)],
 			};
@@ -270,7 +276,7 @@ export class MergeConflictIncomingChangesNode extends ViewNode {
 	getCommand(): Command | undefined {
 		if (this.status.mergeBase == null) {
 			return {
-				title: 'Open Changes',
+				title: 'Open Revision',
 				command: BuiltInCommands.Open,
 				arguments: [GitUri.toRevisionUri('MERGE_HEAD', this.file.fileName, this.status.repoPath)],
 			};

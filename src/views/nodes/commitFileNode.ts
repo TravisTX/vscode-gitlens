@@ -1,6 +1,6 @@
 'use strict';
 import * as paths from 'path';
-import { Command, Selection, ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState } from 'vscode';
+import { Command, Selection, ThemeColor, ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri } from 'vscode';
 import { Commands, DiffWithPreviousCommandArgs } from '../../commands';
 import { GlyphChars } from '../../constants';
 import { Container } from '../../container';
@@ -116,7 +116,11 @@ export class CommitFileNode extends ViewRefFileNode {
 			}${this._options.unpublished ? '+unpublished' : ''}`;
 		}
 
-		return this.commit.isUncommittedStaged ? `${ContextValues.File}+staged` : `${ContextValues.File}+unstaged`;
+		return this.commit.hasConflicts()
+			? `${ContextValues.File}+conflicted`
+			: this.commit.isUncommittedStaged
+			? `${ContextValues.File}+staged`
+			: `${ContextValues.File}+unstaged`;
 	}
 
 	private get description() {
@@ -200,6 +204,42 @@ export class CommitFileNode extends ViewRefFileNode {
 			line = this._options.selection !== undefined ? this._options.selection.active.line : 0;
 		}
 
+		if (this.commit.hasConflicts()) {
+			return {
+				title: 'Open Changes',
+				command: Commands.DiffWith,
+				arguments: [
+					{
+						lhs: {
+							sha: 'MERGE_HEAD',
+							uri: GitUri.fromFile(this.file, this.repoPath, undefined, true),
+						},
+						rhs: {
+							sha: 'HEAD',
+							uri: GitUri.fromFile(this.file, this.repoPath),
+						},
+						repoPath: this.repoPath,
+						line: 0,
+						showOptions: {
+							preserveFocus: false,
+							preview: false,
+						},
+					},
+				],
+			};
+			// return {
+			// 	title: 'Open File',
+			// 	command: BuiltInCommands.Open,
+			// 	arguments: [
+			// 		GitUri.resolveToUri(this.file.fileName, this.repoPath),
+			// 		{
+			// 			preserveFocus: true,
+			// 			preview: true,
+			// 		},
+			// 	],
+			// };
+		}
+
 		const commandArgs: DiffWithPreviousCommandArgs = {
 			commit: this.commit,
 			uri: GitUri.fromFile(this.file, this.commit.repoPath),
@@ -214,6 +254,13 @@ export class CommitFileNode extends ViewRefFileNode {
 			command: Commands.DiffWithPrevious,
 			arguments: [undefined, commandArgs],
 		};
+	}
+
+	async getConflictBaseUri(): Promise<Uri | undefined> {
+		if (!this.commit.hasConflicts()) return undefined;
+
+		const mergeBase = await Container.git.getMergeBase(this.repoPath, 'MERGE_HEAD', 'HEAD');
+		return GitUri.fromFile(this.file, this.repoPath, mergeBase ?? 'HEAD');
 	}
 
 	protected getLabelFormat() {

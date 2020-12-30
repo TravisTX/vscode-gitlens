@@ -235,6 +235,10 @@ export abstract class GitCommit implements GitRevisionReference {
 		return CommitFormatter.fromTemplate('${message}', this, { messageTruncateAtNewLine: true });
 	}
 
+	hasConflicts(): boolean {
+		return false;
+	}
+
 	@memoize()
 	toGitUri(previous: boolean = false): GitUri {
 		return GitUri.fromCommit(this, previous);

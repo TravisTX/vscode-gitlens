@@ -870,7 +870,7 @@ export class ViewCommands {
 	}
 
 	@debug()
-	private openChangesWithWorking(node: ViewRefFileNode | MergeConflictFileNode | StatusFileNode) {
+	private async openChangesWithWorking(node: ViewRefFileNode | MergeConflictFileNode | StatusFileNode) {
 		if (
 			!(node instanceof ViewRefFileNode) &&
 			!(node instanceof MergeConflictFileNode) &&
@@ -895,6 +895,17 @@ export class ViewCommands {
 					preview: true,
 				},
 			});
+		} else if (node instanceof CommitFileNode && node.commit.hasConflicts()) {
+			const baseUri = await node.getConflictBaseUri();
+			if (baseUri != null) {
+				return executeEditorCommand<DiffWithWorkingCommandArgs>(Commands.DiffWithWorking, undefined, {
+					uri: baseUri,
+					showOptions: {
+						preserveFocus: true,
+						preview: true,
+					},
+				});
+			}
 		}
 
 		return GitActions.Commit.openChangesWithWorking(node.file, { repoPath: node.repoPath, ref: node.ref.ref });

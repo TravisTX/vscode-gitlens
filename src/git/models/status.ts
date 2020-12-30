@@ -398,9 +398,32 @@ export class GitStatusFile implements GitFile {
 	}
 
 	async toPsuedoCommits(): Promise<GitLogCommit[]> {
-		if (this.workingTreeStatus == null && this.indexStatus == null) return [];
+		const commits: GitLogCommit[] = [];
 
-		const commits = [];
+		if (this.conflictStatus != null) {
+			const user = await Container.git.getCurrentUser(this.repoPath);
+			commits.push(
+				new GitLogCommit(
+					GitCommitType.LogFile,
+					this.repoPath,
+					GitRevision.uncommitted,
+					'You',
+					user?.email ?? undefined,
+					new Date(),
+					new Date(),
+					'',
+					this.fileName,
+					[this],
+					this.status,
+					this.originalFileName,
+					GitRevision.uncommittedStaged,
+					this.originalFileName ?? this.fileName,
+				),
+			);
+			return commits;
+		}
+
+		if (this.workingTreeStatus == null && this.indexStatus == null) return commits;
 
 		const user = await Container.git.getCurrentUser(this.repoPath);
 		if (this.workingTreeStatus != null && this.indexStatus != null) {
