@@ -29,6 +29,7 @@ import {
 	FileHistoryNode,
 	FolderNode,
 	LineHistoryNode,
+	MergeConflictFileNode,
 	nodeSupportsClearing,
 	PageableViewNode,
 	PagerNode,
@@ -746,8 +747,35 @@ export class ViewCommands {
 	}
 
 	@debug()
-	private openChanges(node: ViewRefFileNode | StatusFileNode) {
-		if (!(node instanceof ViewRefFileNode) && !(node instanceof StatusFileNode)) return;
+	private openChanges(node: ViewRefFileNode | MergeConflictFileNode | StatusFileNode) {
+		if (
+			!(node instanceof ViewRefFileNode) &&
+			!(node instanceof MergeConflictFileNode) &&
+			!(node instanceof StatusFileNode)
+		) {
+			return;
+		}
+
+		if (node instanceof MergeConflictFileNode) {
+			void executeCommand<DiffWithCommandArgs>(Commands.DiffWith, {
+				lhs: {
+					sha: 'MERGE_HEAD',
+					uri: GitUri.fromFile(node.file, node.repoPath, undefined, true),
+				},
+				rhs: {
+					sha: 'HEAD',
+					uri: GitUri.fromFile(node.file, node.repoPath),
+				},
+				repoPath: node.repoPath,
+				line: 0,
+				showOptions: {
+					preserveFocus: false,
+					preview: false,
+				},
+			});
+
+			return;
+		}
 
 		const command = node.getCommand();
 		if (command?.arguments == null) return;
@@ -842,12 +870,26 @@ export class ViewCommands {
 	}
 
 	@debug()
-	private openChangesWithWorking(node: ViewRefFileNode | StatusFileNode) {
-		if (!(node instanceof ViewRefFileNode) && !(node instanceof StatusFileNode)) return Promise.resolve();
+	private openChangesWithWorking(node: ViewRefFileNode | MergeConflictFileNode | StatusFileNode) {
+		if (
+			!(node instanceof ViewRefFileNode) &&
+			!(node instanceof MergeConflictFileNode) &&
+			!(node instanceof StatusFileNode)
+		) {
+			return Promise.resolve();
+		}
 
 		if (node instanceof StatusFileNode) {
 			return executeEditorCommand<DiffWithWorkingCommandArgs>(Commands.DiffWithWorking, undefined, {
 				uri: node.uri,
+				showOptions: {
+					preserveFocus: true,
+					preview: true,
+				},
+			});
+		} else if (node instanceof MergeConflictFileNode) {
+			return executeEditorCommand<DiffWithWorkingCommandArgs>(Commands.DiffWithWorking, undefined, {
+				uri: node.baseUri,
 				showOptions: {
 					preserveFocus: true,
 					preview: true,
@@ -859,9 +901,12 @@ export class ViewCommands {
 	}
 
 	@debug()
-	private openFile(node: ViewRefFileNode | StatusFileNode | FileHistoryNode | LineHistoryNode) {
+	private openFile(
+		node: ViewRefFileNode | MergeConflictFileNode | StatusFileNode | FileHistoryNode | LineHistoryNode,
+	) {
 		if (
 			!(node instanceof ViewRefFileNode) &&
+			!(node instanceof MergeConflictFileNode) &&
 			!(node instanceof StatusFileNode) &&
 			!(node instanceof FileHistoryNode) &&
 			!(node instanceof LineHistoryNode)
@@ -893,13 +938,14 @@ export class ViewCommands {
 
 	@debug()
 	private openRevision(
-		node: CommitFileNode | ResultsFileNode | StashFileNode | StatusFileNode,
+		node: CommitFileNode | ResultsFileNode | StashFileNode | MergeConflictFileNode | StatusFileNode,
 		options?: OpenFileAtRevisionCommandArgs,
 	) {
 		if (
 			!(node instanceof CommitFileNode) &&
-			!(node instanceof StashFileNode) &&
 			!(node instanceof ResultsFileNode) &&
+			!(node instanceof StashFileNode) &&
+			!(node instanceof MergeConflictFileNode) &&
 			!(node instanceof StatusFileNode)
 		) {
 			return Promise.resolve();
@@ -909,7 +955,7 @@ export class ViewCommands {
 
 		let uri = options.revisionUri;
 		if (uri == null) {
-			if (node instanceof ResultsFileNode) {
+			if (node instanceof ResultsFileNode || node instanceof MergeConflictFileNode) {
 				uri = GitUri.toRevisionUri(node.uri);
 			} else {
 				uri =

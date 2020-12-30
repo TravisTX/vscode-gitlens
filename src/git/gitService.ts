@@ -64,6 +64,7 @@ import {
 	GitTagParser,
 	GitTree,
 	GitTreeParser,
+	MergeStatus,
 	PullRequest,
 	PullRequestDateFormatting,
 	PullRequestState,
@@ -580,7 +581,7 @@ export class GitService implements Disposable {
 
 	@log()
 	async branchContainsCommit(repoPath: string, name: string, ref: string): Promise<boolean> {
-		let data = await Git.branch__contains(repoPath, ref, { name: name });
+		let data = await Git.branch__containsOrPointsAt(repoPath, ref, { mode: 'contains', name: name });
 		data = data?.trim();
 		return Boolean(data);
 	}
@@ -1339,13 +1340,17 @@ export class GitService implements Disposable {
 	}
 
 	@log()
-	async getCommitBranches(repoPath: string, ref: string, options?: { remotes?: boolean }): Promise<string[]> {
-		const data = await Git.branch__contains(repoPath, ref, options);
+	async getCommitBranches(
+		repoPath: string,
+		ref: string,
+		options?: { mode?: 'contains' | 'pointsAt'; remotes?: boolean },
+	): Promise<string[]> {
+		const data = await Git.branch__containsOrPointsAt(repoPath, ref, options);
 		if (!data) return [];
 
 		return data
 			.split('\n')
-			.map(b => b.substr(2).trim())
+			.map(b => b.trim())
 			.filter(<T>(i?: T): i is T => Boolean(i));
 	}
 
@@ -2363,6 +2368,31 @@ export class GitService implements Disposable {
 			Logger.error(ex, cc);
 			return undefined;
 		}
+	}
+
+	async getMergeStatus(repoPath: string): Promise<MergeStatus | undefined>;
+	async getMergeStatus(status: GitStatus): Promise<MergeStatus | undefined>;
+	@log({ args: false })
+	async getMergeStatus(repoPathOrStatus: string | GitStatus): Promise<MergeStatus | undefined> {
+		let status;
+		if (typeof repoPathOrStatus === 'string') {
+			status = await this.getStatusForRepo(repoPathOrStatus);
+		} else {
+			status = repoPathOrStatus;
+		}
+		if (status?.hasConflicts() !== true) return undefined;
+
+		const [mergeBase, possibleSourceBranches] = await Promise.all([
+			Container.git.getMergeBase(status.repoPath, 'MERGE_HEAD', 'HEAD'),
+			Container.git.getCommitBranches(status.repoPath, 'MERGE_HEAD', { mode: 'pointsAt' }),
+		]);
+		return {
+			repoPath: status.repoPath,
+			mergeBase: mergeBase,
+			conflicts: status.files.filter(f => f.conflicted),
+			into: status.branch,
+			incoming: possibleSourceBranches?.length === 1 ? possibleSourceBranches[0] : undefined,
+		};
 	}
 
 	@log()

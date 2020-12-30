@@ -1,17 +1,17 @@
 'use strict';
 import * as paths from 'path';
 import { Command, ThemeIcon, TreeItem, TreeItemCollapsibleState } from 'vscode';
-import { Commands, DiffWithPreviousCommandArgs } from '../../commands';
+import { Commands, DiffWithCommandArgs, DiffWithPreviousCommandArgs } from '../../commands';
+import { CommitFileNode } from './commitFileNode';
 import { Container } from '../../container';
+import { FileNode } from './folderNode';
 import { GitFile, GitLogCommit, StatusFileFormatter } from '../../git/git';
 import { GitUri } from '../../git/gitUri';
 import { Strings } from '../../system';
 import { View } from '../viewBase';
-import { CommitFileNode } from './commitFileNode';
 import { ContextValues, ViewNode } from './viewNode';
-import { DiffWithCommandArgs } from '../../commands/diffWith';
 
-export class StatusFileNode extends ViewNode {
+export class StatusFileNode extends ViewNode implements FileNode {
 	public readonly commits: GitLogCommit[];
 	public readonly file: GitFile;
 	public readonly repoPath: string;

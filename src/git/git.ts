@@ -10,7 +10,7 @@ import { Objects, Strings } from '../system';
 import { findGitPath, GitLocation } from './locator';
 import { fsExists, run, RunError, RunOptions } from './shell';
 import { GitBranchParser, GitLogParser, GitReflogParser, GitStashParser, GitTagParser } from './parsers/parsers';
-import { GitFileStatus, GitRevision } from './models/models';
+import { GitRevision } from './models/models';
 
 export * from './models/models';
 export * from './parsers/parsers';
@@ -19,7 +19,7 @@ export * from './remotes/provider';
 export * from './search';
 export { RunError } from './shell';
 
-export type GitDiffFilter = Exclude<GitFileStatus, '!' | '?'>;
+export type GitDiffFilter = 'A' | 'C' | 'D' | 'M' | 'R' | 'T' | 'U' | 'X' | 'B' | '*';
 
 const emptyArray = (Object.freeze([]) as any) as any[];
 const emptyObj = Object.freeze({});
@@ -376,21 +376,28 @@ export namespace Git {
 		);
 	}
 
-	export function branch__contains(
+	export function branch__containsOrPointsAt(
 		repoPath: string,
 		ref: string,
-		{ name = undefined, remotes = false }: { name?: string; remotes?: boolean } = {},
+		{
+			mode = 'contains',
+			name = undefined,
+			remotes = false,
+		}: { mode?: 'contains' | 'pointsAt'; name?: string; remotes?: boolean } = {},
 	) {
 		const params = ['branch'];
 		if (remotes) {
 			params.push('-r');
 		}
-		params.push('--contains', ref);
+		params.push(mode === 'pointsAt' ? `--points-at=${ref}` : `--contains=${ref}`, '--format=%(refname:short)');
 		if (name != null) {
 			params.push(name);
 		}
 
-		return git<string>({ cwd: repoPath, configs: ['-c', 'color.branch=false'] }, ...params);
+		return git<string>(
+			{ cwd: repoPath, configs: ['-c', 'color.branch=false'], errors: GitErrorHandling.Ignore },
+			...params,
+		);
 	}
 
 	export function check_ignore(repoPath: string, ...files: string[]) {

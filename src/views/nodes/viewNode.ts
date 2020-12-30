@@ -37,6 +37,7 @@ export enum ContextValues {
 	FileHistory = 'gitlens:history:file',
 	Folder = 'gitlens:folder',
 	LineHistory = 'gitlens:history:line',
+	Merge = 'gitlens:merge',
 	Message = 'gitlens:message',
 	Pager = 'gitlens:pager',
 	PullRequest = 'gitlens:pullrequest',

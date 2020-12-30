@@ -3671,7 +3671,8 @@
 			{
 				"command": "gitlens.views.openChanges",
 				"title": "Open Changes",
-				"category": "GitLens"
+				"category": "GitLens",
+				"icon": "$(compare-changes)"
 			},
 			{
 				"command": "gitlens.views.openChangesWithWorking",
@@ -7110,7 +7111,7 @@
 				},
 				{
 					"command": "gitlens.views.selectFileForCompare",
-					"when": "viewItem =~ /gitlens:file\\b/",
+					"when": "viewItem =~ /gitlens:file\\b(?!.*?\\b\\+conflicted\\b)/",
 					"group": "4_gitlens_compare@99"
 				},
 				{
@@ -7274,8 +7275,13 @@
 					"alt": "gitlens.views.openFile"
 				},
 				{
+					"command": "gitlens.views.openChanges",
+					"when": "viewItem =~ /gitlens:file\\b(?=.*?\\b\\+conflicted\\b)/",
+					"group": "inline@96"
+				},
+				{
 					"command": "gitlens.views.openChangesWithWorking",
-					"when": "viewItem =~ /gitlens:file\\b(?!.*?\\b\\+unstaged\\b)/",
+					"when": "viewItem =~ /gitlens:file\\b(?!.*?\\b\\+(conflicted|unstaged)\\b)/",
 					"group": "inline@96"
 				},
 				{
@@ -8028,10 +8034,12 @@
 			"gitlens/commit/file/openChanges": [
 				{
 					"command": "gitlens.externalDiff",
+					"when": "viewItem =~ /gitlens:file\\b(?!.*?\\b\\+conflicted\\b)/",
 					"group": "1_gitlens@1"
 				},
 				{
 					"command": "gitlens.views.openChangesWithWorking",
+					"whsen": "viewItem =~ /gitlens:file\\b(?!.*?\\b\\+conflicted\\b)/",
 					"group": "1_gitlens@2"
 				},
 				{
