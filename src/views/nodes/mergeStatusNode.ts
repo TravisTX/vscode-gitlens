@@ -105,8 +105,8 @@ export class MergeConflictFileNode extends ViewNode implements FileNode {
 
 	getChildren(): ViewNode[] {
 		return [
-			new MergeConflictIncomingChangesNode(this.view, this, this.status, this.file),
 			new MergeConflictCurrentChangesNode(this.view, this, this.status, this.file),
+			new MergeConflictIncomingChangesNode(this.view, this, this.status, this.file),
 		];
 	}
 
@@ -202,9 +202,10 @@ export class MergeConflictCurrentChangesNode extends ViewNode {
 	}
 
 	getTreeItem(): TreeItem {
-		const item = new TreeItem('Current Changes', TreeItemCollapsibleState.None);
+		const item = new TreeItem('Current changes', TreeItemCollapsibleState.None);
+		item.contextValue = ContextValues.MergeCurrentChanges;
 		item.description = this.status.into;
-		item.iconPath = new ThemeIcon('$(diff)');
+		item.iconPath = new ThemeIcon('diff');
 		item.tooltip = new MarkdownString(
 			`Current changes to $(file) ${this.file.fileName} on $(git-branch) ${this.status.into}`,
 			true,
@@ -259,9 +260,10 @@ export class MergeConflictIncomingChangesNode extends ViewNode {
 	}
 
 	getTreeItem(): TreeItem {
-		const item = new TreeItem('Incoming Changes', TreeItemCollapsibleState.None);
+		const item = new TreeItem('Incoming changes', TreeItemCollapsibleState.None);
+		item.contextValue = ContextValues.MergeIncomingChanges;
 		item.description = this.status.incoming;
-		item.iconPath = new ThemeIcon('$(diff)');
+		item.iconPath = new ThemeIcon('diff');
 		item.tooltip = new MarkdownString(
 			`Incoming changes to $(file) ${this.file.fileName}${
 				this.status.incoming ? ` from $(git-branch) ${this.status.incoming}` : ''

@@ -13,6 +13,7 @@ import {
 	StatusFileFormatter,
 } from '../../git/git';
 import { GitUri } from '../../git/gitUri';
+import { MergeConflictCurrentChangesNode, MergeConflictIncomingChangesNode } from './mergeStatusNode';
 import { StashesView } from '../stashesView';
 import { View } from '../viewBase';
 import { ContextValues, ViewNode, ViewRefFileNode } from './viewNode';
@@ -59,8 +60,16 @@ export class CommitFileNode extends ViewRefFileNode {
 		return this.commit;
 	}
 
-	getChildren(): ViewNode[] {
-		return [];
+	async getChildren(): Promise<ViewNode[]> {
+		if (!this.commit.hasConflicts()) return [];
+
+		const mergeStatus = await Container.git.getMergeStatus(this.commit.repoPath);
+		if (mergeStatus == null) return [];
+
+		return [
+			new MergeConflictCurrentChangesNode(this.view, this, mergeStatus, this.file),
+			new MergeConflictIncomingChangesNode(this.view, this, mergeStatus, this.file),
+		];
 	}
 
 	async getTreeItem(): Promise<TreeItem> {
@@ -80,7 +89,10 @@ export class CommitFileNode extends ViewRefFileNode {
 			}
 		}
 
-		const item = new TreeItem(this.label, TreeItemCollapsibleState.None);
+		const item = new TreeItem(
+			this.label,
+			this.commit.hasConflicts() ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.None,
+		);
 		item.contextValue = this.contextValue;
 		item.description = this.description;
 		item.tooltip = this.tooltip;

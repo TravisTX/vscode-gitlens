@@ -7276,7 +7276,12 @@
 				},
 				{
 					"command": "gitlens.views.openChanges",
-					"when": "viewItem =~ /gitlens:file\\b(?=.*?\\b\\+conflicted\\b)/",
+					"when": "view =~ /gitlens\\.views\\.(?!fileHistory|lineHistory)\\b/ && viewItem =~ /gitlens:file\\b(?=.*?\\b\\+conflicted\\b)/",
+					"group": "inline@96"
+				},
+				{
+					"command": "gitlens.views.openFile",
+					"when": "view =~ /gitlens\\.views\\.(fileHistory|lineHistory)\\b/ && viewItem =~ /gitlens:file\\b(?=.*?\\b\\+conflicted\\b)/",
 					"group": "inline@96"
 				},
 				{
