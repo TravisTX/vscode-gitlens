@@ -13,7 +13,8 @@ import {
 	StatusFileFormatter,
 } from '../../git/git';
 import { GitUri } from '../../git/gitUri';
-import { MergeConflictCurrentChangesNode, MergeConflictIncomingChangesNode } from './mergeStatusNode';
+import { MergeConflictCurrentChangesNode } from './mergeConflictCurrentChangesNode';
+import { MergeConflictIncomingChangesNode } from './mergeConflictIncomingChangesNode';
 import { StashesView } from '../stashesView';
 import { View } from '../viewBase';
 import { ContextValues, ViewNode, ViewRefFileNode } from './viewNode';
@@ -63,12 +64,15 @@ export class CommitFileNode extends ViewRefFileNode {
 	async getChildren(): Promise<ViewNode[]> {
 		if (!this.commit.hasConflicts()) return [];
 
-		const mergeStatus = await Container.git.getMergeStatus(this.commit.repoPath);
-		if (mergeStatus == null) return [];
+		const [mergeStatus, rebaseStatus] = await Promise.all([
+			Container.git.getMergeStatus(this.commit.repoPath),
+			Container.git.getRebaseStatus(this.commit.repoPath),
+		]);
+		if (mergeStatus == null && rebaseStatus == null) return [];
 
 		return [
-			new MergeConflictCurrentChangesNode(this.view, this, mergeStatus, this.file),
-			new MergeConflictIncomingChangesNode(this.view, this, mergeStatus, this.file),
+			new MergeConflictCurrentChangesNode(this.view, this, (mergeStatus ?? rebaseStatus)!, this.file),
+			new MergeConflictIncomingChangesNode(this.view, this, (mergeStatus ?? rebaseStatus)!, this.file),
 		];
 	}
 
@@ -76,12 +80,12 @@ export class CommitFileNode extends ViewRefFileNode {
 		if (!this.commit.isFile) {
 			// See if we can get the commit directly from the multi-file commit
 			const commit = this.commit.toFileCommit(this.file);
-			if (commit === undefined) {
+			if (commit == null) {
 				const log = await Container.git.getLogForFile(this.repoPath, this.file.fileName, {
 					limit: 2,
 					ref: this.commit.sha,
 				});
-				if (log !== undefined) {
+				if (log != null) {
 					this.commit = log.commits.get(this.commit.sha) ?? this.commit;
 				}
 			} else {

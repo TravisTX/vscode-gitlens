@@ -60,14 +60,13 @@ export type View =
 	| SearchAndCompareView
 	| StashesView
 	| TagsView;
-export type ViewsWithFiles =
+export type ViewsWithCommits =
 	| BranchesView
 	| ContributorsView
 	| CommitsView
 	| RemotesView
 	| RepositoriesView
 	| SearchAndCompareView
-	| StashesView
 	| TagsView;
 
 export interface TreeViewNodeCollapsibleStateChangeEvent<T> extends TreeViewExpansionEvent<T> {

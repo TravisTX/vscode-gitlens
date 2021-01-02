@@ -32,11 +32,22 @@ export class GitStatus {
 		public readonly files: GitStatusFile[],
 		public readonly state: GitTrackingState,
 		public readonly upstream?: string,
+		public readonly rebasing: boolean = false,
 	) {
 		this.detached = GitBranch.isDetached(branch);
 		if (this.detached) {
 			this.branch = GitBranch.formatDetached(this.sha);
 		}
+	}
+
+	@memoize()
+	get conflicts() {
+		return this.files.filter(f => f.conflicted);
+	}
+
+	@memoize()
+	get hasConflicts() {
+		return this.files.some(f => f.conflicted);
 	}
 
 	get ref() {
@@ -241,11 +252,6 @@ export class GitStatus {
 		return GitStatus.getUpstreamStatus(this.upstream, this.state, options);
 	}
 
-	@memoize()
-	hasConflicts() {
-		return this.files.some(f => f.conflicted);
-	}
-
 	static getUpstreamStatus(
 		upstream: string | undefined,
 		state: { ahead: number; behind: number },
@@ -373,7 +379,7 @@ export class GitStatusFile implements GitFile {
 	}
 
 	get status(): GitFileStatus {
-		return this.conflictStatus ?? this.indexStatus ?? this.workingTreeStatus!;
+		return (this.conflictStatus ?? this.indexStatus ?? this.workingTreeStatus)!;
 	}
 
 	@memoize()

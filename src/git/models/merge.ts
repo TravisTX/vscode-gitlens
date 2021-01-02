@@ -1,10 +1,11 @@
 'use strict';
-import { GitStatusFile } from './status';
+import { GitBranchReference } from './models';
 
-export interface MergeStatus {
+export interface GitMergeStatus {
+	type: 'merge';
 	repoPath: string;
-	into: string;
+	HEAD: string | 'MERGE_HEAD';
 	mergeBase: string | undefined;
-	incoming: string | undefined;
-	conflicts: GitStatusFile[];
+	current: GitBranchReference;
+	incoming: GitBranchReference | undefined;
 }
